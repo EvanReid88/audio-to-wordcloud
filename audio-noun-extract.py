@@ -13,9 +13,9 @@ __author__ = 'Evan Reid'
 
 tmp_filename = '/ytwctmp'
 
-# TODO get directory using python commands
 # TODO allow option to pass path for existing wav file
 # TODO proper comments and method descriptions
+# TODO write tests
 
 def extract_nouns(text):
     # extracting plural and non plural nouns and proper nouns.
@@ -52,7 +52,6 @@ def audio_to_text(audio_path):
     # speech to text
     return r.recognize_sphinx(audio)
 
-
 def process_audio(out_path):
      # change to a single channel audio with 16000 frame rate (for pocketsphinx)
     audio = AudioSegment.from_wav(out_path + '.wav')
@@ -75,13 +74,17 @@ def youtube_to_wav(url, out_path):
     # download youtube video as audio file
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         filenames = [url]
-        ydl.download(filenames)
+        try:
+            ydl.download(filenames)
+        except:
+            raise Exception('could not download youtube audio from url')
 
 def main():
 
     # parse arguments
     parser = argparse.ArgumentParser(description='Audio to wordcloud')
-    parser.add_argument('url', type=str, help='url of youtube video')
+    parser.add_argument('url', type=str, help='url of youtube video used to generate wordcloud')
+    parser.add_argument('-s', '--save', type=str, help='out-path for exporting word cloud png')
     args = parser.parse_args()
 
     # get temprorary directory path
@@ -106,6 +109,13 @@ def main():
     plt.figure()
     plt.imshow(wordcloud, interpolation='bilinear')
     plt.axis('off')
+
+    if (args.save != None):
+        try:
+            plt.savefig(args.save + 'noun_wc.png', format='png')
+        except:
+            raise Exception('could not save png to out path')
+    
     plt.show()
 
 if __name__ ==  '__main__':
