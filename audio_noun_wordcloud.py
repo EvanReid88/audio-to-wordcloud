@@ -14,7 +14,6 @@ __author__ = 'Evan Reid'
 
 tmp_filename = '/ytwctmp'
 
-# TODO add simple progress reports
 # TODO proper comments and method descriptions
 # TODO write tests
 
