@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from wordcloud import WordCloud as wc
 from pydub import AudioSegment 
 from os import remove
+import sys
 import nltk
 import argparse
 import tempfile
@@ -13,7 +14,7 @@ __author__ = 'Evan Reid'
 
 tmp_filename = '/ytwctmp'
 
-# TODO allow option to pass path for existing wav file
+# TODO add simple progress reports
 # TODO proper comments and method descriptions
 # TODO write tests
 
@@ -40,24 +41,25 @@ def audio_to_text(audio_path):
     r = sr.Recognizer()
     audio_file = sr.AudioFile(audio_path)
 
-    # TODO allow user to enter start and stopping time on video
-    # use record(audio, offset=X, duration=X)cd 
     with audio_file as source:
         r.adjust_for_ambient_noise(source)
         audio = r.record(source)
 
-    # delete the original temporary wav file
+    # delete the temporary wav file
     remove(audio_path)
 
     # speech to text
     return r.recognize_sphinx(audio)
 
-def process_audio(out_path):
-     # change to a single channel audio with 16000 frame rate (for pocketsphinx)
-    audio = AudioSegment.from_wav(out_path + '.wav')
-    audio = audio.set_channels(1)
-    audio = audio.set_frame_rate(16000)
-    audio.export(out_path + '.wav', format='wav')
+def process_audio(in_path, out_path):
+    # change to a single channel audio with 16000 frame rate (for pocketsphinx)
+    try:
+        audio = AudioSegment.from_wav(in_path)
+        audio = audio.set_channels(1)
+        audio = audio.set_frame_rate(16000)
+        audio.export(out_path, format='wav')
+    except:
+        raise Exception('Failed to process audio from specified path')
 
 def youtube_to_wav(url, out_path):
     # options for youtube_dl
@@ -77,27 +79,34 @@ def youtube_to_wav(url, out_path):
         try:
             ydl.download(filenames)
         except:
-            raise Exception('could not download youtube audio from url')
+            raise Exception('Failed to download youtube audio from specified url')
 
 def main():
 
     # parse arguments
     parser = argparse.ArgumentParser(description='Audio to wordcloud')
-    parser.add_argument('url', type=str, help='url of youtube video used to generate wordcloud')
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('--url', type=str, help='url of youtube video used to generate wordcloud')
+    group.add_argument('--path', type=str, help='path of .wav file used to generate wordcloud')
     parser.add_argument('-s', '--save', type=str, help='out-path for exporting word cloud png')
     args = parser.parse_args()
 
     # get temprorary directory path
-    tmp_path = tempfile.gettempdir() + tmp_filename
+    tmp_path = tempfile.gettempdir() + tmp_filename + '.wav'
 
-    # download youtube video and save as .wav audio file
-    youtube_to_wav(args.url, tmp_path)
+    if args.url:
+        # download youtube video and save as .wav audio file
+        youtube_to_wav(args.url, tmp_path)
+        in_path = tmp_path
+       
+    else:
+        in_path = args.path
 
     # process audio to work correctly with pocketsphinx
-    process_audio(tmp_path)
-    
+    process_audio(in_path, tmp_path)
+
     # convert speech audio to text
-    audio_text = audio_to_text(tmp_path + '.wav')    
+    audio_text = audio_to_text(tmp_path) 
 
     # extract nouns from text
     nouns_text = extract_nouns(audio_text)
@@ -105,16 +114,17 @@ def main():
     # generate wordcloud from nouns
     wordcloud = wc(background_color='white').generate(nouns_text)
 
-    # Display the generated wordcloud
+    # display the generated wordcloud
     plt.figure()
     plt.imshow(wordcloud, interpolation='bilinear')
     plt.axis('off')
 
+    # save wordcloud if user passes --save args
     if (args.save != None):
         try:
             plt.savefig(args.save + 'noun_wc.png', format='png')
         except:
-            raise Exception('could not save png to out path')
+            raise Exception('Failed to save png to specified out path')
     
     plt.show()
 
