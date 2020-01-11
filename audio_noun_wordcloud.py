@@ -12,6 +12,7 @@ import youtube_dl
 
 __author__ = 'Evan Reid'
 
+# TODO use named temp file 
 tmp_filename = '/ytwctmp'
 
 # TODO proper comments and method descriptions
@@ -38,14 +39,14 @@ def extract_nouns(text):
 
 def audio_to_text(audio_path):
     r = sr.Recognizer()
-    audio_file = sr.AudioFile(audio_path)
-
+    try:
+        audio_file = sr.AudioFile(audio_path)
+    except:
+        raise Exception('Failed to convert audio to text from specified path')
+    
     with audio_file as source:
         r.adjust_for_ambient_noise(source)
         audio = r.record(source)
-
-    # delete the temporary wav file
-    remove(audio_path)
 
     # speech to text
     return r.recognize_sphinx(audio)
@@ -93,9 +94,9 @@ def main():
     # get temprorary directory path
     tmp_path = tempfile.gettempdir() + tmp_filename + '.wav'
 
-    if args.url:
+    if args.url != None:
         # download youtube video and save as .wav audio file
-        youtube_to_wav(args.url, tmp_path)
+        youtube_to_wav(args.url, tmp_path[0:-4])
         in_path = tmp_path
        
     else:
@@ -106,6 +107,9 @@ def main():
 
     # convert speech audio to text
     audio_text = audio_to_text(tmp_path) 
+
+    # delete the temporary wav file
+    remove(tmp_path)
 
     # extract nouns from text
     nouns_text = extract_nouns(audio_text)
