@@ -10,15 +10,11 @@ import tempfile
 import youtube_dl
 # ffmpeg, pocketsphinx required
 
-__author__ = 'Evan Reid'
-
-# TODO use named temp file 
-tmp_filename = '/ytwctmp'
-
-# TODO proper comments and method descriptions
-# TODO write tests
+__author__ = 'evanreid88'
 
 def extract_nouns(text):
+    """A function which uses the nltk library to tokenize words and extract nouns"""
+
     # extracting plural and non plural nouns and proper nouns.
     word_types = ['NN', 'NNS', 'NNP', 'NNPS']
 
@@ -38,12 +34,14 @@ def extract_nouns(text):
     return ' '.join(nouns)
 
 def audio_to_text(audio_path):
+    """A function which converts audio (speech) from .wav format into a string of words using pocketsphinx speech recognition"""
+
     r = sr.Recognizer()
     try:
         audio_file = sr.AudioFile(audio_path)
     except:
         raise Exception('Failed to convert audio to text from specified path')
-    
+
     with audio_file as source:
         r.adjust_for_ambient_noise(source)
         audio = r.record(source)
@@ -52,16 +50,21 @@ def audio_to_text(audio_path):
     return r.recognize_sphinx(audio)
 
 def process_audio(in_path, out_path):
+    """A function to process / resample audio into the format required for pocketsphinx speech recognition"""
+
     # change to a single channel audio with 16000 frame rate (for pocketsphinx)
     try:
         audio = AudioSegment.from_wav(in_path)
-        audio = audio.set_channels(1)
-        audio = audio.set_frame_rate(16000)
-        audio.export(out_path, format='wav')
     except:
         raise Exception('Failed to process audio from specified path')
 
+    audio = audio.set_channels(1)
+    audio = audio.set_frame_rate(16000)
+    audio.export(out_path, format='wav')
+
 def youtube_to_wav(url, out_path):
+    """A function used to download a youtube video audio as a .wav file into the specified path"""
+
     # options for youtube_dl
     ydl_opts = {
         'format': 'bestaudio/best',
@@ -83,7 +86,7 @@ def youtube_to_wav(url, out_path):
 
 def main():
 
-    # parse arguments
+    # parse arguments. url or path to a .wav file must be provided
     parser = argparse.ArgumentParser(description='Audio to wordcloud')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--url', type=str, help='url of youtube video used to generate wordcloud')
@@ -91,8 +94,11 @@ def main():
     parser.add_argument('-s', '--save', type=str, help='out-path for exporting word cloud png')
     args = parser.parse_args()
 
-    # get temprorary directory path
-    tmp_path = tempfile.gettempdir() + tmp_filename + '.wav'
+    # temporary file for storing processed audio used in speech to text
+    tmp_file_path = tempfile.NamedTemporaryFile()
+
+    # temprorary directory path
+    tmp_path = tempfile.gettempdir() + tmp_file_path.name + '.wav'
 
     if args.url != None:
         # download youtube video and save as .wav audio file
