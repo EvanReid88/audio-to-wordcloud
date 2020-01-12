@@ -10,6 +10,8 @@ import tempfile
 import youtube_dl
 # ffmpeg, pocketsphinx required
 
+# TODO add usage, why, improvements, to readme
+
 __author__ = 'evanreid88'
 
 def extract_nouns(text):
