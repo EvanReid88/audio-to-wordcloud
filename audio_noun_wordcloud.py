@@ -70,7 +70,7 @@ def youtube_to_wav(url, out_path):
     # options for youtube_dl
     ydl_opts = {
         'format': 'bestaudio/best',
-        'outtmpl': out_path + '.webm', # TODO '/tmp/foo_%(title)s-%(id)s.%(ext)s'
+        'outtmpl': out_path + '.webm',
         'postprocessors': [{
            'key': 'FFmpegExtractAudio',
            'preferredcodec': 'wav',
@@ -97,27 +97,31 @@ def main():
     args = parser.parse_args()
 
     # temporary file for storing processed audio used in speech to text
-    tmp_file_path = tempfile.NamedTemporaryFile()
+    tmp_file = tempfile.NamedTemporaryFile()
 
     # temprorary directory path
-    tmp_path = tempfile.gettempdir() + tmp_file_path.name + '.wav'
+    tmp_path = tempfile.gettempdir() + tmp_file.name + '.wav'
 
-    if args.url != None:
-        # download youtube video and save as .wav audio file
-        youtube_to_wav(args.url, tmp_path[0:-4])
-        in_path = tmp_path
+    try:
+        if args.url != None:
+            # download youtube video and save as .wav audio file
+            youtube_to_wav(args.url, tmp_path[0:-4])
+            in_path = tmp_path
        
-    else:
-        in_path = args.path
+        else:
+            in_path = args.path
 
-    # process audio to work correctly with pocketsphinx
-    process_audio(in_path, tmp_path)
+        # process audio to work correctly with pocketsphinx
+        process_audio(in_path, tmp_path)
 
-    # convert speech audio to text
-    audio_text = audio_to_text(tmp_path) 
+        # convert speech audio to text
+        audio_text = audio_to_text(tmp_path) 
+    except:
+        # ensure temporary file is deleted if anything fails
+        tmp_file.close()
 
     # delete the temporary wav file
-    remove(tmp_path)
+    tmp_file.close()
 
     # extract nouns from text
     nouns_text = extract_nouns(audio_text)
